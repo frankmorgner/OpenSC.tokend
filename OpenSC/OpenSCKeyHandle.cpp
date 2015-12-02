@@ -131,19 +131,22 @@ CSSM_ALGORITHMS signOnly, const CssmData &input, CssmData &signature)
 
 	// Call OpenSC to do the actual signing
 	if (0 > sc_pkcs15_compute_signature(mToken.mScP15Card, mKey.signKey(),
-				flags, input.Data, input.Length, outputData, sig_len); {
+				flags, input.Data, input.Length, outputData, sig_len))
+	{
 		free(outputData);
 		CssmError::throwMe(CSSMERR_CSP_FUNCTION_FAILED);
 	}
 
 	signature.Data = outputData;
-	signature.Length = rv;
+	signature.Length = sig_len;
 }
 
 
 void OpenSCKeyHandle::generateEcdsaSignature(const Context &context,
 CSSM_ALGORITHMS signOnly, const CssmData &input, CssmData &signature)
 {
+	unsigned int flags = 0;
+
 	if (mKey.signKey()->type != SC_PKCS15_TYPE_PRKEY_EC)
 		CssmError::throwMe(CSSMERR_CSP_INVALID_ALGORITHM);
 
@@ -152,11 +155,6 @@ CSSM_ALGORITHMS signOnly, const CssmData &input, CssmData &signature)
 		CssmError::throwMe(CSSMERR_CSP_INVALID_ATTR_PADDING);
 
 	switch (signOnly) {
-		case CSSM_ALGID_MD5:
-			if (input.Length != 16)
-				CssmError::throwMe(CSSMERR_CSP_BLOCK_SIZE_MISMATCH);
-			flags |= SC_ALGORITHM_ECDSA_HASH_MD5;
-			break;
 		case CSSM_ALGID_SHA1:
 			if (input.Length != 20)
 				CssmError::throwMe(CSSMERR_CSP_BLOCK_SIZE_MISMATCH);
