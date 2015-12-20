@@ -156,7 +156,28 @@ void OpenSCToken::verifyPIN(int pinNum, const uint8_t *pin, size_t pinLength)
 {
 	sc_debug(mScCtx, SC_LOG_DEBUG_NORMAL, "In OpenSCToken::verifyPIN(%d)\n", pinNum);
 	int pNumber = pinNum;
-	
+
+	// If the user entered no PIN in the (OS) provided prompt; pinLength is
+        // zero; but *pin points to the empty string; rather than being NULL.
+        //
+        // In the specific case that there is a PIN pad reader connected we
+        // detect this; and used it to trigger a read of the PIN on the
+        // PIN pad (which requires both pin == NULL and pinLength == 0).
+        //
+        if (mScP15Card->card->reader->capabilities & SC_READER_CAP_PIN_PAD) {
+               if (pinLength == 0) {
+                       sc_debug(mScCtx, SC_LOG_DEBUG_NORMAL, "Defer PIN entry to the reader keypad.");
+                       pin = NULL;
+               } else {
+                       // We are not blocking key entry from the keyboard. As it is too late at
+                       // this point - the user has already entered the PIN on the desktop its
+                       // its keyboard. Longer term we could start honouring the flag
+                       // CSSM_ACL_SUBJECT_TYPE_PROTECTED_PASSWORD.
+                       //
+                       sc_debug(mScCtx, SC_LOG_DEBUG_NORMAL, "Warning: the reader keypad is not used; PIN entered on keyboard.");
+               }
+        };
+ 
 	if (mCurrentPIN != -1) {
 		pNumber = mCurrentPIN;
 		mCurrentPIN = -1;
@@ -445,7 +466,6 @@ void OpenSCToken::populate()
 	KeyCountMap mKeys;
 	
 	// Locate certificates
-	//FIXME - max objects constant ?
 	r = sc_pkcs15_get_objects(mScP15Card, SC_PKCS15_TYPE_CERT_X509, objs, 32);
 	sc_debug(mScCtx, SC_LOG_DEBUG_NORMAL, "  sc_pkcs15_get_objects(TYPE_CERT_X509): %d\n", r);
 	if (r >= 0) {
@@ -463,8 +483,8 @@ void OpenSCToken::populate()
 	}
 
 	// Locate private keys
-	r = sc_pkcs15_get_objects(mScP15Card, SC_PKCS15_TYPE_PRKEY_RSA, objs, 32);
-	sc_debug(mScCtx, SC_LOG_DEBUG_NORMAL, "  sc_pkcs15_get_objects(TYPE_PRKEY_RSA): %d\n", r);
+	r = sc_pkcs15_get_objects(mScP15Card, SC_PKCS15_TYPE_PRKEY, objs, 32);
+	sc_debug(mScCtx, SC_LOG_DEBUG_NORMAL, "  sc_pkcs15_get_objects(TYPE_PRKEY): %d\n", r);
 	if (r >= 0) {
 		
 		// Count the occurences of the private key ids
