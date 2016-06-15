@@ -58,21 +58,6 @@ OpenSCToken::~OpenSCToken()
 }
 
 
-void OpenSCToken::didDisconnect()
-{
-	sc_debug(mScCtx, SC_LOG_DEBUG_NORMAL, "In OpenSCToken::didDisconnect()\n");
-	PCSC::Card::didDisconnect();
-}
-
-
-void OpenSCToken::didEnd()
-{
-	return;
-	sc_debug(mScCtx, SC_LOG_DEBUG_NORMAL, "In OpenSCToken::didEnd()\n");
-	PCSC::Card::didEnd();
-}
-
-
 void OpenSCToken::changePIN(int pinNum,
 const unsigned char *oldPin, size_t oldPinLength,
 const unsigned char *newPin, size_t newPinLength)
@@ -331,7 +316,7 @@ char printName[PATH_MAX])
 	sc_debug(mScCtx, SC_LOG_DEBUG_NORMAL, "In OpenSCToken::establish() -> we had the highest score\n");
 
 	if (mScP15Card == NULL)
-		PCSC::Error::throwMe(CSSM_ERRCODE_INTERNAL_ERROR);
+		CssmError::throwMe(CSSM_ERRCODE_INTERNAL_ERROR);
 
 	sc_debug(mScCtx, SC_LOG_DEBUG_NORMAL, "  About to create schema\n");
 	mSchema = new OpenSCSchema();
@@ -517,7 +502,7 @@ void OpenSCToken::populate()
 				
 				// if we didn't find the key, abort
 				if (j >= r)
-					PCSC::Error::throwMe(CSSM_ERRCODE_INTERNAL_ERROR);
+					CssmError::throwMe(CSSM_ERRCODE_INTERNAL_ERROR);
 			} else
 				continue;
 			

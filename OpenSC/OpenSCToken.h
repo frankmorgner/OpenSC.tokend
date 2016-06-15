@@ -36,8 +36,6 @@
 #include "libopensc/pkcs15.h"
 #include "libopensc/errors.h"
 
-#include <security_utilities/pcsc++.h>
-
 class OpenSCSchema;
 
 //
@@ -49,9 +47,6 @@ class OpenSCToken : public Tokend::Token, public TokenContext
 		public:
 		OpenSCToken();
 		~OpenSCToken();
-
-		virtual void didDisconnect();
-		virtual void didEnd();
 
 		virtual uint32 probe(SecTokendProbeFlags flags, char tokenUid[TOKEND_MAX_UID]);
 		virtual void establish(const CSSM_GUID *guid, uint32 subserviceId,

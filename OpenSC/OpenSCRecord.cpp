@@ -149,7 +149,7 @@ OpenSCRecord(openSCToken, objectOne)
 		mPrKeySign = objectTwo;
 		mPrKeyDecrypt = objectOne;
 	} else
-		PCSC::Error::throwMe(CSSM_ERRCODE_INTERNAL_ERROR);
+		CssmError::throwMe(CSSM_ERRCODE_INTERNAL_ERROR);
 	mPrKeyObj = objectOne; // Could be objectTwo also, since both keys share the same attributes
 }
 
