@@ -133,7 +133,7 @@ uint32_t OpenSCToken::pinStatus(int pinNum)
 bool OpenSCToken::isLocked()
 {
 	sc_debug(mScCtx, SC_LOG_DEBUG_NORMAL, "In OpenSCToken::isLocked()\n");
-	return mLocked;
+	return pinStatus(mCurrentPIN) != 0x9000;
 }
 
 
