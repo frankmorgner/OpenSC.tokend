@@ -133,7 +133,49 @@ uint32_t OpenSCToken::pinStatus(int pinNum)
 {
 	sc_debug(mScCtx, SC_LOG_DEBUG_NORMAL, "In OpenSCToken::pinStatus for pinNum (%d)\n", pinNum);
 
-	if (pinNum == mCurrentPIN && !isLocked()) {
+	int r, i, rv;
+	struct sc_pkcs15_object *objs[32];
+
+	// pinNum -> AuthID
+	const sc_pkcs15_id_t *auth_id = getIdFromPinMap(pinNum);
+	if (auth_id == NULL) {
+		sc_debug(mScCtx, SC_LOG_DEBUG_NORMAL, "  ERR: getIdFromPinMap(): no AuthID found for pinNum %d\n", pinNum);
+		CssmError::throwMe(CSSM_ERRCODE_INVALID_DATA);
+	}
+
+	// AuthID -> pin object  +  change pin
+	r = sc_pkcs15_get_objects(mScP15Card, SC_PKCS15_TYPE_AUTH_PIN, objs, 32);
+	sc_debug(mScCtx, SC_LOG_DEBUG_NORMAL, "  sc_pkcs15_get_objects(pin_id=%s): %d\n", sc_pkcs15_print_id(auth_id),  r);
+	if (r >= 0) {
+		for (i = 0; i < r; i++) {
+			sc_pkcs15_auth_info_t *auth_info = (sc_pkcs15_auth_info_t *) objs[i]->data;
+			if (sc_pkcs15_compare_id(auth_id, &auth_info->auth_id)) {
+
+				rv = sc_pkcs15_get_pin_info( mScP15Card, objs[i] );
+				sc_debug(mScCtx, SC_LOG_DEBUG_NORMAL, "  In OpenSCToken::sc_pkcs15_get_pin_info returned %d for pin %d\n", rv, pinNum );
+				if (rv==0) {
+					struct sc_pkcs15_auth_info *pin_info = (struct sc_pkcs15_auth_info *) objs[i]->data;
+					switch (pin_info->logged_in) {
+						case SC_PIN_STATE_LOGGED_IN:
+							sc_debug(mScCtx, SC_LOG_DEBUG_NORMAL, "In OpenSCToken::pinStatus Verified");
+							return 0x9000;
+						case SC_PIN_STATE_LOGGED_OUT:
+							sc_debug(mScCtx, SC_LOG_DEBUG_NORMAL, "In OpenSCToken::pinStatus blocked");
+							return 0x6300;
+						default:
+							// SC_PIN_CMD_GET_INFO is not implemented
+							break;
+					}
+					break;
+				} else
+					break;
+			}
+		}
+	}
+
+	// SC_PIN_CMD_GET_INFO yielded an error or is not implemented
+	// fall back to the old mechanism
+	if (pinNum == mCurrentPIN && !mLocked) {
 		sc_debug(mScCtx, SC_LOG_DEBUG_NORMAL, "In OpenSCToken::pinStatus Verified");
 		return 0x9000;
 	}
